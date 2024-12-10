@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/zitadel/zitadel/internal/api/authz"
+	http_util "github.com/zitadel/zitadel/internal/api/http"
+	"github.com/zitadel/zitadel/internal/api/ui/console/path"
 	"github.com/zitadel/zitadel/internal/database"
 	"github.com/zitadel/zitadel/internal/domain"
 	"github.com/zitadel/zitadel/internal/telemetry/tracing"
@@ -19,6 +21,7 @@ type OIDCClient struct {
 	AppID                    string                     `json:"app_id,omitempty"`
 	State                    domain.AppState            `json:"state,omitempty"`
 	ClientID                 string                     `json:"client_id,omitempty"`
+	BackChannelLogoutURI     string                     `json:"back_channel_logout_uri,omitempty"`
 	HashedSecret             string                     `json:"client_secret,omitempty"`
 	RedirectURIs             []string                   `json:"redirect_uris,omitempty"`
 	ResponseTypes            []domain.OIDCResponseType  `json:"response_types,omitempty"`
@@ -43,7 +46,7 @@ type OIDCClient struct {
 //go:embed oidc_client_by_id.sql
 var oidcClientQuery string
 
-func (q *Queries) GetOIDCClientByID(ctx context.Context, clientID string, getKeys bool) (client *OIDCClient, err error) {
+func (q *Queries) ActiveOIDCClientByID(ctx context.Context, clientID string, getKeys bool) (client *OIDCClient, err error) {
 	ctx, span := tracing.NewSpan(ctx)
 	defer func() { span.EndWithError(err) }()
 
@@ -55,6 +58,10 @@ func (q *Queries) GetOIDCClientByID(ctx context.Context, clientID string, getKey
 	}
 	if err != nil {
 		return nil, zerrors.ThrowInternal(err, "QUERY-ieR7R", "Errors.Internal")
+	}
+	if authz.GetInstance(ctx).ConsoleClientID() == clientID {
+		client.RedirectURIs = append(client.RedirectURIs, http_util.DomainContext(ctx).Origin()+path.RedirectPath)
+		client.PostLogoutRedirectURIs = append(client.PostLogoutRedirectURIs, http_util.DomainContext(ctx).Origin()+path.PostLogoutPath)
 	}
 	return client, err
 }

@@ -15,6 +15,8 @@ import (
 	"github.com/zitadel/zitadel/internal/crypto"
 	"github.com/zitadel/zitadel/internal/domain"
 	"github.com/zitadel/zitadel/internal/eventstore"
+	"github.com/zitadel/zitadel/internal/notification/senders"
+	"github.com/zitadel/zitadel/internal/notification/senders/mock"
 	"github.com/zitadel/zitadel/internal/repository/org"
 	"github.com/zitadel/zitadel/internal/repository/user"
 	"github.com/zitadel/zitadel/internal/zerrors"
@@ -254,7 +256,7 @@ func TestCommandSide_SetOneTimePassword(t *testing.T) {
 				t.Errorf("got wrong err: %v ", err)
 			}
 			if tt.res.err == nil {
-				assert.Equal(t, tt.res.want, got)
+				assertObjectDetails(t, tt.res.want, got)
 			}
 		})
 	}
@@ -265,6 +267,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 		eventstore         func(*testing.T) *eventstore.Eventstore
 		userEncryption     crypto.EncryptionAlgorithm
 		userPasswordHasher *crypto.Hasher
+		phoneCodeVerifier  func(ctx context.Context, id string) (senders.CodeGenerator, error)
 	}
 	type args struct {
 		ctx            context.Context
@@ -393,6 +396,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 								time.Hour*1,
 								domain.NotificationTypeEmail,
 								"",
+								"",
 							),
 						),
 					),
@@ -445,6 +449,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 								},
 								time.Hour*1,
 								domain.NotificationTypeEmail,
+								"",
 								"",
 							),
 						),
@@ -521,6 +526,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 								},
 								time.Hour*1,
 								domain.NotificationTypeEmail,
+								"",
 								"",
 							),
 						),
@@ -599,6 +605,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 								time.Hour*1,
 								domain.NotificationTypeEmail,
 								"",
+								"",
 							),
 						),
 					),
@@ -641,6 +648,92 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "set password (external code), ok",
+			fields: fields{
+				eventstore: expectEventstore(
+					expectFilter(
+						eventFromEventPusher(
+							user.NewHumanAddedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								"username",
+								"firstname",
+								"lastname",
+								"nickname",
+								"displayname",
+								language.German,
+								domain.GenderUnspecified,
+								"email@test.ch",
+								true,
+							),
+						),
+						eventFromEventPusher(
+							user.NewHumanEmailVerifiedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+							),
+						),
+						eventFromEventPusherWithCreationDateNow(
+							user.NewHumanPasswordCodeAddedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								nil,
+								0,
+								domain.NotificationTypeSms,
+								"",
+								"id",
+							),
+						),
+						eventFromEventPusherWithCreationDateNow(
+							user.NewHumanPasswordCodeSentEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								&senders.CodeGeneratorInfo{
+									ID:             "id",
+									VerificationID: "verificationID",
+								},
+							),
+						),
+					),
+					expectFilter(
+						eventFromEventPusher(
+							org.NewPasswordComplexityPolicyAddedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								1,
+								false,
+								false,
+								false,
+								false,
+							),
+						),
+					),
+					expectPush(
+						user.NewHumanPasswordChangedEvent(context.Background(),
+							&user.NewAggregate("user1", "org1").Aggregate,
+							"$plain$x$password",
+							false,
+							"",
+						),
+					),
+				),
+				userPasswordHasher: mockPasswordHasher("x"),
+				userEncryption:     crypto.CreateMockEncryptionAlg(gomock.NewController(t)),
+				phoneCodeVerifier: func(ctx context.Context, id string) (senders.CodeGenerator, error) {
+					sender := mock.NewMockCodeGenerator(gomock.NewController(t))
+					sender.EXPECT().VerifyCode("verificationID", "a").Return(nil)
+					return sender, nil
+				},
+			},
+			args: args{
+				ctx:           context.Background(),
+				userID:        "user1",
+				resourceOwner: "org1",
+				password:      "password",
+				code:          "a",
+			},
+			res: res{
+				want: &domain.ObjectDetails{
+					ResourceOwner: "org1",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -648,6 +741,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 				eventstore:         tt.fields.eventstore(t),
 				userPasswordHasher: tt.fields.userPasswordHasher,
 				userEncryption:     tt.fields.userEncryption,
+				phoneCodeVerifier:  tt.fields.phoneCodeVerifier,
 			}
 			got, err := r.SetPasswordWithVerifyCode(tt.args.ctx, tt.args.resourceOwner, tt.args.userID, tt.args.code, tt.args.password, tt.args.userAgentID, tt.args.changeRequired)
 			if tt.res.err == nil {
@@ -657,7 +751,7 @@ func TestCommandSide_SetPasswordWithVerifyCode(t *testing.T) {
 				t.Errorf("got wrong err: %v ", err)
 			}
 			if tt.res.err == nil {
-				assert.Equal(t, tt.res.want, got)
+				assertObjectDetails(t, tt.res.want, got)
 			}
 		})
 	}
@@ -1102,7 +1196,7 @@ func TestCommandSide_ChangePassword(t *testing.T) {
 				t.Errorf("got wrong err: %v ", err)
 			}
 			if tt.res.err == nil {
-				assert.Equal(t, tt.res.want, got)
+				assertObjectDetails(t, tt.res.want, got)
 			}
 		})
 	}
@@ -1111,14 +1205,14 @@ func TestCommandSide_ChangePassword(t *testing.T) {
 func TestCommandSide_RequestSetPassword(t *testing.T) {
 	type fields struct {
 		eventstore func(*testing.T) *eventstore.Eventstore
+		newCode    encrypedCodeFunc
 	}
 	type args struct {
-		ctx             context.Context
-		userID          string
-		resourceOwner   string
-		notifyType      domain.NotificationType
-		secretGenerator crypto.Generator
-		authRequestID   string
+		ctx           context.Context
+		userID        string
+		resourceOwner string
+		notifyType    domain.NotificationType
+		authRequestID string
 	}
 	type res struct {
 		want *domain.ObjectDetails
@@ -1248,15 +1342,16 @@ func TestCommandSide_RequestSetPassword(t *testing.T) {
 							time.Hour*1,
 							domain.NotificationTypeEmail,
 							"",
+							"",
 						),
 					),
 				),
+				newCode: mockEncryptedCode("a", 1*time.Hour),
 			},
 			args: args{
-				ctx:             context.Background(),
-				userID:          "user1",
-				resourceOwner:   "org1",
-				secretGenerator: GetMockSecretGenerator(t),
+				ctx:           context.Background(),
+				userID:        "user1",
+				resourceOwner: "org1",
 			},
 			res: res{
 				want: &domain.ObjectDetails{
@@ -1304,16 +1399,17 @@ func TestCommandSide_RequestSetPassword(t *testing.T) {
 							time.Hour*1,
 							domain.NotificationTypeEmail,
 							"authRequestID",
+							"",
 						),
 					),
 				),
+				newCode: mockEncryptedCode("a", 1*time.Hour),
 			},
 			args: args{
-				ctx:             context.Background(),
-				userID:          "user1",
-				resourceOwner:   "org1",
-				secretGenerator: GetMockSecretGenerator(t),
-				authRequestID:   "authRequestID",
+				ctx:           context.Background(),
+				userID:        "user1",
+				resourceOwner: "org1",
+				authRequestID: "authRequestID",
 			},
 			res: res{
 				want: &domain.ObjectDetails{
@@ -1325,9 +1421,10 @@ func TestCommandSide_RequestSetPassword(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Commands{
-				eventstore: tt.fields.eventstore(t),
+				eventstore:       tt.fields.eventstore(t),
+				newEncryptedCode: tt.fields.newCode,
 			}
-			got, err := r.RequestSetPassword(tt.args.ctx, tt.args.userID, tt.args.resourceOwner, tt.args.notifyType, tt.args.secretGenerator, tt.args.authRequestID)
+			got, err := r.RequestSetPassword(tt.args.ctx, tt.args.userID, tt.args.resourceOwner, tt.args.notifyType, tt.args.authRequestID)
 			if tt.res.err == nil {
 				assert.NoError(t, err)
 			}
@@ -1335,7 +1432,7 @@ func TestCommandSide_RequestSetPassword(t *testing.T) {
 				t.Errorf("got wrong err: %v ", err)
 			}
 			if tt.res.err == nil {
-				assert.Equal(t, tt.res.want, got)
+				assertObjectDetails(t, tt.res.want, got)
 			}
 		})
 	}
@@ -1349,6 +1446,7 @@ func TestCommandSide_PasswordCodeSent(t *testing.T) {
 		ctx           context.Context
 		userID        string
 		resourceOwner string
+		generatorInfo *senders.CodeGeneratorInfo
 	}
 	type res struct {
 		err func(error) bool
@@ -1417,6 +1515,7 @@ func TestCommandSide_PasswordCodeSent(t *testing.T) {
 					expectPush(
 						user.NewHumanPasswordCodeSentEvent(context.Background(),
 							&user.NewAggregate("user1", "org1").Aggregate,
+							&senders.CodeGeneratorInfo{},
 						),
 					),
 				),
@@ -1425,6 +1524,55 @@ func TestCommandSide_PasswordCodeSent(t *testing.T) {
 				ctx:           context.Background(),
 				userID:        "user1",
 				resourceOwner: "org1",
+				generatorInfo: &senders.CodeGeneratorInfo{},
+			},
+			res: res{},
+		},
+		{
+			name: "code sent (external code), ok",
+			fields: fields{
+				eventstore: expectEventstore(
+					expectFilter(
+						eventFromEventPusher(
+							user.NewHumanAddedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								"username",
+								"firstname",
+								"lastname",
+								"nickname",
+								"displayname",
+								language.German,
+								domain.GenderUnspecified,
+								"email@test.ch",
+								true,
+							),
+						),
+						eventFromEventPusher(
+							user.NewHumanPhoneChangedEvent(context.Background(),
+								&user.NewAggregate("user1", "org1").Aggregate,
+								"+411234567",
+							),
+						),
+					),
+					expectPush(
+						user.NewHumanPasswordCodeSentEvent(context.Background(),
+							&user.NewAggregate("user1", "org1").Aggregate,
+							&senders.CodeGeneratorInfo{
+								ID:             "generatorID",
+								VerificationID: "verificationID",
+							},
+						),
+					),
+				),
+			},
+			args: args{
+				ctx:           context.Background(),
+				userID:        "user1",
+				resourceOwner: "org1",
+				generatorInfo: &senders.CodeGeneratorInfo{
+					ID:             "generatorID",
+					VerificationID: "verificationID",
+				},
 			},
 			res: res{},
 		},
@@ -1434,7 +1582,7 @@ func TestCommandSide_PasswordCodeSent(t *testing.T) {
 			r := &Commands{
 				eventstore: tt.fields.eventstore(t),
 			}
-			err := r.PasswordCodeSent(tt.args.ctx, tt.args.resourceOwner, tt.args.userID)
+			err := r.PasswordCodeSent(tt.args.ctx, tt.args.resourceOwner, tt.args.userID, tt.args.generatorInfo)
 			if tt.res.err == nil {
 				assert.NoError(t, err)
 			}

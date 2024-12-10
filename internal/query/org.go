@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -82,6 +83,17 @@ type Org struct {
 	Domain string
 }
 
+func orgsCheckPermission(ctx context.Context, orgs *Orgs, permissionCheck domain_pkg.PermissionCheck) {
+	orgs.Orgs = slices.DeleteFunc(orgs.Orgs,
+		func(org *Org) bool {
+			if err := permissionCheck(ctx, domain_pkg.PermissionOrgRead, org.ID, org.ID); err != nil {
+				return true
+			}
+			return false
+		},
+	)
+}
+
 type OrgSearchQueries struct {
 	SearchRequest
 	Queries []SearchQuery
@@ -95,9 +107,18 @@ func (q *OrgSearchQueries) toQuery(query sq.SelectBuilder) sq.SelectBuilder {
 	return query
 }
 
-func (q *Queries) OrgByID(ctx context.Context, shouldTriggerBulk bool, id string) (_ *Org, err error) {
+func (q *Queries) OrgByID(ctx context.Context, shouldTriggerBulk bool, id string) (org *Org, err error) {
 	ctx, span := tracing.NewSpan(ctx)
 	defer func() { span.EndWithError(err) }()
+
+	if org, ok := q.caches.org.Get(ctx, orgIndexByID, id); ok {
+		return org, nil
+	}
+	defer func() {
+		if err == nil && org != nil {
+			q.caches.org.Set(ctx, org)
+		}
+	}()
 
 	if !authz.GetInstance(ctx).Features().ShouldUseImprovedPerformance(feature.ImprovedPerformanceTypeOrgByID) {
 		return q.oldOrgByID(ctx, shouldTriggerBulk, id)
@@ -163,6 +184,11 @@ func (q *Queries) OrgByPrimaryDomain(ctx context.Context, domain string) (org *O
 	ctx, span := tracing.NewSpan(ctx)
 	defer func() { span.EndWithError(err) }()
 
+	org, ok := q.caches.org.Get(ctx, orgIndexByPrimaryDomain, domain)
+	if ok {
+		return org, nil
+	}
+
 	stmt, scan := prepareOrgQuery(ctx, q.client)
 	query, args, err := stmt.Where(sq.Eq{
 		OrgColumnDomain.identifier():     domain,
@@ -177,6 +203,9 @@ func (q *Queries) OrgByPrimaryDomain(ctx context.Context, domain string) (org *O
 		org, err = scan(row)
 		return err
 	}, query, args...)
+	if err == nil {
+		q.caches.org.Set(ctx, org)
+	}
 	return org, err
 }
 
@@ -254,7 +283,18 @@ func (q *Queries) ExistsOrg(ctx context.Context, id, domain string) (verifiedID 
 	return org.ID, nil
 }
 
-func (q *Queries) SearchOrgs(ctx context.Context, queries *OrgSearchQueries) (orgs *Orgs, err error) {
+func (q *Queries) SearchOrgs(ctx context.Context, queries *OrgSearchQueries, permissionCheck domain_pkg.PermissionCheck) (*Orgs, error) {
+	orgs, err := q.searchOrgs(ctx, queries)
+	if err != nil {
+		return nil, err
+	}
+	if permissionCheck != nil {
+		orgsCheckPermission(ctx, orgs, permissionCheck)
+	}
+	return orgs, nil
+}
+
+func (q *Queries) searchOrgs(ctx context.Context, queries *OrgSearchQueries) (orgs *Orgs, err error) {
 	ctx, span := tracing.NewSpan(ctx)
 	defer func() { span.EndWithError(err) }()
 
@@ -281,8 +321,28 @@ func (q *Queries) SearchOrgs(ctx context.Context, queries *OrgSearchQueries) (or
 	return orgs, err
 }
 
-func NewOrgDomainSearchQuery(method TextComparison, value string) (SearchQuery, error) {
-	return NewTextQuery(OrgColumnDomain, value, method)
+func NewOrgIDSearchQuery(value string) (SearchQuery, error) {
+	return NewTextQuery(OrgColumnID, value, TextEquals)
+}
+
+func NewOrgVerifiedDomainSearchQuery(method TextComparison, value string) (SearchQuery, error) {
+	domainQuery, err := NewTextQuery(OrgDomainDomainCol, value, method)
+	if err != nil {
+		return nil, err
+	}
+	verifiedQuery, err := NewBoolQuery(OrgDomainIsVerifiedCol, true)
+	if err != nil {
+		return nil, err
+	}
+	subSelect, err := NewSubSelect(OrgDomainOrgIDCol, []SearchQuery{domainQuery, verifiedQuery})
+	if err != nil {
+		return nil, err
+	}
+	return NewListQuery(
+		OrgColumnID,
+		subSelect,
+		ListIn,
+	)
 }
 
 func NewOrgNameSearchQuery(method TextComparison, value string) (SearchQuery, error) {
@@ -432,4 +492,31 @@ func prepareOrgUniqueQuery(ctx context.Context, db prepareDatabase) (sq.SelectBu
 			}
 			return isUnique, err
 		}
+}
+
+type orgIndex int
+
+//go:generate enumer -type orgIndex -linecomment
+const (
+	// Empty line comment ensures empty string for unspecified value
+	orgIndexUnspecified orgIndex = iota //
+	orgIndexByID
+	orgIndexByPrimaryDomain
+)
+
+// Keys implements [cache.Entry]
+func (o *Org) Keys(index orgIndex) []string {
+	switch index {
+	case orgIndexByID:
+		return []string{o.ID}
+	case orgIndexByPrimaryDomain:
+		return []string{o.Domain}
+	case orgIndexUnspecified:
+	}
+	return nil
+}
+
+func (c *Caches) registerOrgInvalidation() {
+	invalidate := cacheInvalidationFunc(c.org, orgIndexByID, getAggregateID)
+	projection.OrgProjection.RegisterCacheInvalidation(invalidate)
 }

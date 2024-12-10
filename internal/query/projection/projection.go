@@ -45,6 +45,7 @@ var (
 	LoginNameProjection                 *handler.Handler
 	OrgMemberProjection                 *handler.Handler
 	InstanceDomainProjection            *handler.Handler
+	InstanceTrustedDomainProjection     *handler.Handler
 	InstanceMemberProjection            *handler.Handler
 	ProjectMemberProjection             *handler.Handler
 	ProjectGrantMemberProjection        *handler.Handler
@@ -77,9 +78,12 @@ var (
 	TargetProjection                    *handler.Handler
 	ExecutionProjection                 *handler.Handler
 	UserSchemaProjection                *handler.Handler
+	WebKeyProjection                    *handler.Handler
+	DebugEventsProjection               *handler.Handler
 
 	ProjectGrantFields      *handler.FieldHandler
 	OrgDomainVerifiedFields *handler.FieldHandler
+	InstanceDomainFields    *handler.FieldHandler
 )
 
 type projection interface {
@@ -95,14 +99,14 @@ var (
 
 func Create(ctx context.Context, sqlClient *database.DB, es handler.EventStore, config Config, keyEncryptionAlgorithm crypto.EncryptionAlgorithm, certEncryptionAlgorithm crypto.EncryptionAlgorithm, systemUsers map[string]*internal_authz.SystemAPIUser) error {
 	projectionConfig = handler.Config{
-		Client:                sqlClient,
-		Eventstore:            es,
-		BulkLimit:             uint16(config.BulkLimit),
-		RequeueEvery:          config.RequeueEvery,
-		HandleActiveInstances: config.HandleActiveInstances,
-		MaxFailureCount:       config.MaxFailureCount,
-		RetryFailedAfter:      config.RetryFailedAfter,
-		TransactionDuration:   config.TransactionDuration,
+		Client:              sqlClient,
+		Eventstore:          es,
+		BulkLimit:           uint16(config.BulkLimit),
+		RequeueEvery:        config.RequeueEvery,
+		MaxFailureCount:     config.MaxFailureCount,
+		RetryFailedAfter:    config.RetryFailedAfter,
+		TransactionDuration: config.TransactionDuration,
+		ActiveInstancer:     config.ActiveInstancer,
 	}
 
 	OrgProjection = newOrgProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["orgs"]))
@@ -132,6 +136,7 @@ func Create(ctx context.Context, sqlClient *database.DB, es handler.EventStore, 
 	LoginNameProjection = newLoginNameProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["login_names"]))
 	OrgMemberProjection = newOrgMemberProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["org_members"]))
 	InstanceDomainProjection = newInstanceDomainProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["instance_domains"]))
+	InstanceTrustedDomainProjection = newInstanceTrustedDomainProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["instance_trusted_domains"]))
 	InstanceMemberProjection = newInstanceMemberProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["iam_members"]))
 	ProjectMemberProjection = newProjectMemberProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["project_members"]))
 	ProjectGrantMemberProjection = newProjectGrantMemberProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["project_grant_members"]))
@@ -152,7 +157,7 @@ func Create(ctx context.Context, sqlClient *database.DB, es handler.EventStore, 
 	DeviceAuthProjection = newDeviceAuthProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["device_auth"]))
 	SessionProjection = newSessionProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["sessions"]))
 	AuthRequestProjection = newAuthRequestProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["auth_requests"]))
-	MilestoneProjection = newMilestoneProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["milestones"]), systemUsers)
+	MilestoneProjection = newMilestoneProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["milestones"]))
 	QuotaProjection = newQuotaProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["quotas"]))
 	LimitsProjection = newLimitsProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["limits"]))
 	RestrictionsProjection = newRestrictionsProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["restrictions"]))
@@ -161,9 +166,12 @@ func Create(ctx context.Context, sqlClient *database.DB, es handler.EventStore, 
 	TargetProjection = newTargetProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["targets"]))
 	ExecutionProjection = newExecutionProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["executions"]))
 	UserSchemaProjection = newUserSchemaProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["user_schemas"]))
+	WebKeyProjection = newWebKeyProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["web_keys"]))
+	DebugEventsProjection = newDebugEventsProjection(ctx, applyCustomConfig(projectionConfig, config.Customizations["debug_events"]))
 
 	ProjectGrantFields = newFillProjectGrantFields(applyCustomConfig(projectionConfig, config.Customizations[fieldsProjectGrant]))
 	OrgDomainVerifiedFields = newFillOrgDomainVerifiedFields(applyCustomConfig(projectionConfig, config.Customizations[fieldsOrgDomainVerified]))
+	InstanceDomainFields = newFillInstanceDomainFields(applyCustomConfig(projectionConfig, config.Customizations[fieldsInstanceDomain]))
 
 	newProjectionsList()
 	return nil
@@ -215,9 +223,6 @@ func applyCustomConfig(config handler.Config, customConfig CustomConfig) handler
 	if customConfig.RetryFailedAfter != nil {
 		config.RetryFailedAfter = *customConfig.RetryFailedAfter
 	}
-	if customConfig.HandleActiveInstances != nil {
-		config.HandleActiveInstances = *customConfig.HandleActiveInstances
-	}
 	if customConfig.TransactionDuration != nil {
 		config.TransactionDuration = *customConfig.TransactionDuration
 	}
@@ -260,6 +265,7 @@ func newProjectionsList() {
 		LoginNameProjection,
 		OrgMemberProjection,
 		InstanceDomainProjection,
+		InstanceTrustedDomainProjection,
 		InstanceMemberProjection,
 		ProjectMemberProjection,
 		ProjectGrantMemberProjection,
@@ -289,5 +295,7 @@ func newProjectionsList() {
 		TargetProjection,
 		ExecutionProjection,
 		UserSchemaProjection,
+		WebKeyProjection,
+		DebugEventsProjection,
 	}
 }

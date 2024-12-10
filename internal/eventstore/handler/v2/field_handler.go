@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/zitadel/zitadel/internal/eventstore"
-	"github.com/zitadel/zitadel/internal/telemetry/tracing"
 )
 
 type FieldHandler struct {
@@ -42,7 +41,6 @@ func NewFieldHandler(config *Config, name string, eventTypes map[eventstore.Aggr
 			bulkLimit:              config.BulkLimit,
 			eventTypes:             eventTypes,
 			requeueEvery:           config.RequeueEvery,
-			handleActiveInstances:  config.HandleActiveInstances,
 			now:                    time.Now,
 			maxFailureCount:        config.MaxFailureCount,
 			retryFailedAfter:       config.RetryFailedAfter,
@@ -98,9 +96,7 @@ func (h *FieldHandler) processEvents(ctx context.Context, config *triggerConfig)
 		defer cancel()
 	}
 
-	ctx, spanBeginTx := tracing.NewNamedSpan(ctx, "db.BeginTx")
-	tx, err := h.client.BeginTx(txCtx, nil)
-	spanBeginTx.EndWithError(err)
+	tx, err := h.client.BeginTx(txCtx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return false, err
 	}
@@ -116,6 +112,8 @@ func (h *FieldHandler) processEvents(ctx context.Context, config *triggerConfig)
 		}
 	}()
 
+	// always await currently running transactions
+	config.awaitRunning = true
 	currentState, err := h.currentState(ctx, tx, config)
 	if err != nil {
 		if errors.Is(err, errJustUpdated) {

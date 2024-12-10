@@ -3,6 +3,7 @@ package saml
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -67,9 +68,17 @@ func (s *Session) FetchUser(ctx context.Context) (user idp.User, err error) {
 
 	s.Assertion, err = s.ServiceProvider.ServiceProvider.ParseResponse(s.Request, []string{s.RequestID})
 	if err != nil {
+		invalidRespErr := new(saml.InvalidResponseError)
+		if errors.As(err, &invalidRespErr) {
+			return nil, zerrors.ThrowInvalidArgument(invalidRespErr.PrivateErr, "SAML-ajl3irfs", "Errors.Intent.ResponseInvalid")
+		}
 		return nil, zerrors.ThrowInvalidArgument(err, "SAML-nuo0vphhh9", "Errors.Intent.ResponseInvalid")
 	}
 
+	// nameID is required, but at least in ADFS it will not be sent unless explicitly configured
+	if s.Assertion.Subject == nil || s.Assertion.Subject.NameID == nil {
+		return nil, zerrors.ThrowInvalidArgument(err, "SAML-EFG32", "Errors.Intent.ResponseInvalid")
+	}
 	nameID := s.Assertion.Subject.NameID
 	userMapper := NewUser()
 	// use the nameID as default mapping id

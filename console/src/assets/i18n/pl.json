@@ -197,7 +197,8 @@
           "VE": "Gdy użytkownik zmieni swój adres e-mail, otrzyma e-mail z linkiem do weryfikacji nowego adresu.",
           "VP": "Gdy użytkownik zmieni swój numer telefonu, otrzyma SMS z kodem do weryfikacji nowego numeru.",
           "VEO": "Gdy użytkownik doda metodę jednorazowego hasła przez e-mail, musi ją aktywować, wprowadzając kod wysłany na jego adres e-mail.",
-          "VSO": "Gdy użytkownik doda metodę jednorazowego hasła przez SMS, musi ją aktywować, wprowadzając kod wysłany na jego numer telefonu."
+          "VSO": "Gdy użytkownik doda metodę jednorazowego hasła przez SMS, musi ją aktywować, wprowadzając kod wysłany na jego numer telefonu.",
+          "IU": "Kiedy zostanie utworzony kod zaproszenia użytkownika, otrzyma on e-mail z linkiem do ustawienia swojej metody uwierzytelniania."
         }
       },
       "LOGIN_TEXTS": {
@@ -231,7 +232,7 @@
           "LABEL": "Maksymalny czas życia w godzinach",
           "PW_CHECK": {
             "TITLE": "Sprawdzenie Hasła",
-            "DESCRIPTION": "Twoi użytkownicy muszą zmienić swoje hasła w tych okresach."
+            "DESCRIPTION": "Po tym okresie użytkownicy będą zobowiązani do ponownej autoryzacji za pomocą hasła."
           },
           "EXT_LOGIN_CHECK": {
             "TITLE": "Sprawdzenie Logowania Zewnętrznego",
@@ -1085,7 +1086,8 @@
       "REMOVEACTIONSLIST": {
         "TITLE": "Usunąć wybrane działanie?",
         "DESCRIPTION": "Czy na pewno chcesz usunąć wybrane działania z przepływu?"
-      }
+      },
+      "ABOUTNAME": "Nazwa akcji i nazwa funkcji w JavaScript muszą być takie same"
     },
     "TOAST": {
       "ACTIONSSET": "Ustawiono działanie",
@@ -1379,7 +1381,10 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "hu": "Magyar",
+        "ko": "한국어"
       }
     },
     "SMTP": {
@@ -1416,6 +1421,8 @@
         "SID": "Sid",
         "TOKEN": "Token",
         "SENDERNUMBER": "Numer nadawcy",
+        "VERIFYSERVICESID": "SID usługi weryfikacji",
+        "VERIFYSERVICESID_DESCRIPTION": "Ustawienie SID usługi weryfikacji umożliwia korzystanie z usługi Twilio Verify zamiast usługi wiadomości do weryfikacji numerów telefonów i SMS OTP.",
         "ADDED": "Twilio dodano pomyślnie.",
         "UPDATED": "Twilio zostało pomyślnie zaktualizowane.",
         "REMOVED": "Twilio usunięte",
@@ -1436,9 +1443,7 @@
         "7": "Hasło jednorazowe (OTP) - SMS",
         "8": "Hasło jednorazowe (OTP) — e-mail"
       },
-      "ADDGENERATOR": "Zdefiniuj wygląd sekretu",
-      "GENERATORTYPE": "Typ",
-      "EXPIRY": "Wygaśnięcie (w godzinach)",
+      "EXPIRY": "Wygaśnięcie (w minutach)",
       "INCLUDEDIGITS": "Dołącz cyfry",
       "INCLUDESYMBOLS": "Dołącz symbole",
       "INCLUDELOWERLETTERS": "Dołącz małe litery",
@@ -1468,6 +1473,8 @@
       "USERSCHEMA_DESCRIPTION": "Schematy użytkowników umożliwiają zarządzanie schematami danych użytkowników. Jeśli flaga jest włączona, będziesz mógł korzystać z nowego interfejsu API i jego funkcji.",
       "ACTIONS": "Akcje",
       "ACTIONS_DESCRIPTION": "Akcje v2 umożliwiają zarządzanie wykonaniami danych i celami. Jeżeli flaga jest włączona, będziesz mógł korzystać z nowego interfejsu API i jego funkcji.",
+      "OIDCSINGLEV1SESSIONTERMINATION": "OIDC Single V1 Zakończenie sesji",
+      "OIDCSINGLEV1SESSIONTERMINATION_DESCRIPTION": "Jeśli flaga jest włączona, będziesz mógł zakończyć pojedynczą sesję z interfejsu użytkownika logowania, podając id_token z roszczeniem `sid` jako id_token_hint w punkcie końcowym end_session. Należy pamiętać, że obecnie wszystkie sesje z tego samego agenta użytkownika (przeglądarki) są kończone w interfejsie użytkownika logowania. Sesje zarządzane za pomocą interfejsu API sesji już pozwalają na zakończenie pojedynczych sesji.",
       "STATES": {
         "INHERITED": "Dziedziczony",
         "ENABLED": "Włączony",
@@ -1613,7 +1620,9 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "ko": "한국어"
       },
       "KEYS": {
         "emailVerificationDoneText": "Weryfikacja adresu e-mail zakończona",
@@ -1628,7 +1637,6 @@
         "initPasswordText": "Inicjalizacja hasła",
         "initializeDoneText": "Inicjalizacja użytkownika zakończona",
         "initializeUserText": "Inicjalizacja użytkownika",
-        "linkingUserPromptText": "Komunikat o łączeniu użytkowników",
         "linkingUserDoneText": "Łączenie użytkownika zakończone",
         "loginText": "Zaloguj się",
         "logoutText": "Wyloguj się",
@@ -1664,7 +1672,8 @@
         "PR": "Resetowanie hasła",
         "DC": "Rejestracja domeny",
         "PL": "Bez hasła",
-        "PC": "Zmiana hasła"
+        "PC": "Zmiana hasła",
+        "IU": "Zaproś użytkownika"
       },
       "CHIPS": {
         "firstname": "Imię",
@@ -1684,7 +1693,8 @@
         "tempUsername": "Tymczasowa nazwa użytkownika",
         "otp": "Hasło jednorazowe",
         "verifyUrl": "URL do weryfikacji hasła jednorazowego",
-        "expiry": "Wygaśnięcie"
+        "expiry": "Wygaśnięcie",
+        "applicationName": "Nazwa aplikacji"
       },
       "TOAST": {
         "UPDATED": "Teksty niestandardowe zapisane."
@@ -1712,8 +1722,8 @@
       "ALLOWUSERNAMEPASSWORD_DESC": "Zwykłe logowanie za pomocą nazwy użytkownika i hasła jest dozwolone.",
       "ALLOWEXTERNALIDP_DESC": "Logowanie jest dozwolone dla dostawców tożsamości podstawowych",
       "ALLOWREGISTER_DESC": "Jeśli ta opcja jest zaznaczona, pojawi się dodatkowy krok rejestracji użytkownika w procesie logowania.",
-      "FORCEMFA": "Wymuś MFA",
-      "FORCEMFALOCALONLY": "Wymuś MFA dla lokalnych użytkowników",
+      "FORCEMFA": "Wymuś MFA dla wszystkich użytkowników",
+      "FORCEMFALOCALONLY": "Wymuś MFA tylko dla lokalnie uwierzytelnionych użytkowników",
       "FORCEMFALOCALONLY_DESC": "Jeśli ta opcja jest zaznaczona, lokalni uwierzytelnieni użytkownicy muszą skonfigurować drugi czynnik logowania.",
       "HIDEPASSWORDRESET_DESC": "Jeśli ta opcja jest zaznaczona, użytkownik nie może zresetować swojego hasła w procesie logowania.",
       "HIDELOGINNAMESUFFIX": "Ukryj sufiks nazwy użytkownika",
@@ -1782,7 +1792,7 @@
       "TYPE": {
         "OWNED": "Własne Projekty",
         "OWNED_SINGULAR": "Własny Projekt",
-        "GRANTED_SINGULAR": "Udzielony Projekt"
+        "GRANTED_SINGULAR": "Projekt przydzielony {{name}}"
       },
       "PRIVATELABEL": {
         "TITLE": "Ustawienia marka",
@@ -2058,10 +2068,10 @@
       "ISAUTOCREATION_DESC": "Jeśli zostanie wybrana, konto zostanie utworzone, jeśli jeszcze nie istnieje.",
       "ISAUTOUPDATE": "Automatyczna aktualizacja",
       "ISAUTOUPDATE_DESC": "Jeśli zaznaczone, konta są aktualizowane przy ponownym uwierzytelnianiu.",
-      "ISCREATIONALLOWED": "tworzenie dozwolone",
-      "ISCREATIONALLOWED_DESC": "Określa, czy można tworzyć konta.",
-      "ISLINKINGALLOWED": "dozwolone łączenie rachunków",
-      "ISLINKINGALLOWED_DESC": "Określa, czy tożsamość może być powiązana z istniejącym kontem.",
+      "ISCREATIONALLOWED": "Tworzenie konta dozwolone (ręcznie)",
+      "ISCREATIONALLOWED_DESC": "Określa, czy konta mogą być tworzone przy użyciu konta zewnętrznego. Wyłącz, jeśli użytkownicy nie powinni mieć możliwości edytowania informacji o koncie, gdy automatyczne tworzenie jest włączone.",
+      "ISLINKINGALLOWED": "Łączenie kont dozwolone (ręcznie)",
+      "ISLINKINGALLOWED_DESC": "Określa, czy tożsamość może być ręcznie połączona z istniejącym kontem. Wyłącz, jeśli użytkownicy powinni mieć możliwość łączenia tylko proponowanego konta w przypadku aktywnego automatycznego łączenia.",
       "AUTOLINKING_DESC": "Określa, czy tożsamość będzie proszona o połączenie z istniejącym kontem.",
       "AUTOLINKINGTYPE": {
         "0": "Wyłączone",
@@ -2554,7 +2564,9 @@
     "cs": "Čeština",
     "ru": "Русский",
     "nl": "Nederlands",
-    "sv": "Svenska"
+    "sv": "Svenska",
+    "id": "Bahasa Indonesia",
+    "ko": "한국어"
   },
   "MEMBER": {
     "ADD": "Dodaj managera",

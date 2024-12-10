@@ -11,6 +11,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 
 	"github.com/zitadel/zitadel/internal/api/authz"
+	"github.com/zitadel/zitadel/internal/crypto"
 	"github.com/zitadel/zitadel/internal/database"
 	"github.com/zitadel/zitadel/internal/domain"
 	"github.com/zitadel/zitadel/internal/query/projection"
@@ -28,6 +29,10 @@ var (
 		name:  projection.ExecutionIDCol,
 		table: executionTable,
 	}
+	ExecutionColumnCreationDate = Column{
+		name:  projection.ExecutionCreationDateCol,
+		table: executionTable,
+	}
 	ExecutionColumnChangeDate = Column{
 		name:  projection.ExecutionChangeDateCol,
 		table: executionTable,
@@ -36,11 +41,6 @@ var (
 		name:  projection.ExecutionInstanceIDCol,
 		table: executionTable,
 	}
-	ExecutionColumnSequence = Column{
-		name:  projection.ExecutionSequenceCol,
-		table: executionTable,
-	}
-
 	executionTargetsTable = table{
 		name:          projection.ExecutionTable + "_" + projection.ExecutionTargetSuffix,
 		instanceIDCol: projection.ExecutionTargetInstanceIDCol,
@@ -79,7 +79,6 @@ func (e *Executions) SetState(s *State) {
 }
 
 type Execution struct {
-	ID string
 	domain.ObjectDetails
 
 	Targets []*exec.Target
@@ -177,6 +176,11 @@ func (q *Queries) TargetsByExecutionID(ctx context.Context, ids []string) (execu
 		instanceID,
 		database.TextArray[string](ids),
 	)
+	for i := range execution {
+		if err := execution[i].decryptSigningKey(q.targetEncryptionAlgorithm); err != nil {
+			return nil, err
+		}
+	}
 	return execution, err
 }
 
@@ -207,15 +211,20 @@ func (q *Queries) TargetsByExecutionIDs(ctx context.Context, ids1, ids2 []string
 		database.TextArray[string](ids1),
 		database.TextArray[string](ids2),
 	)
+	for i := range execution {
+		if err := execution[i].decryptSigningKey(q.targetEncryptionAlgorithm); err != nil {
+			return nil, err
+		}
+	}
 	return execution, err
 }
 
-func prepareExecutionQuery(ctx context.Context, db prepareDatabase) (sq.SelectBuilder, func(row *sql.Row) (*Execution, error)) {
+func prepareExecutionQuery(context.Context, prepareDatabase) (sq.SelectBuilder, func(row *sql.Row) (*Execution, error)) {
 	return sq.Select(
 			ExecutionColumnInstanceID.identifier(),
 			ExecutionColumnID.identifier(),
+			ExecutionColumnCreationDate.identifier(),
 			ExecutionColumnChangeDate.identifier(),
-			ExecutionColumnSequence.identifier(),
 			executionTargetsListCol.identifier(),
 		).From(executionTable.identifier()).
 			Join("(" + executionTargetsQuery + ") AS " + executionTargetsTableAlias.alias + " ON " +
@@ -226,12 +235,12 @@ func prepareExecutionQuery(ctx context.Context, db prepareDatabase) (sq.SelectBu
 		scanExecution
 }
 
-func prepareExecutionsQuery(ctx context.Context, db prepareDatabase) (sq.SelectBuilder, func(rows *sql.Rows) (*Executions, error)) {
+func prepareExecutionsQuery(context.Context, prepareDatabase) (sq.SelectBuilder, func(rows *sql.Rows) (*Executions, error)) {
 	return sq.Select(
 			ExecutionColumnInstanceID.identifier(),
 			ExecutionColumnID.identifier(),
+			ExecutionColumnCreationDate.identifier(),
 			ExecutionColumnChangeDate.identifier(),
-			ExecutionColumnSequence.identifier(),
 			executionTargetsListCol.identifier(),
 			countColumn.identifier(),
 		).From(executionTable.identifier()).
@@ -256,8 +265,8 @@ func scanExecution(row *sql.Row) (*Execution, error) {
 	err := row.Scan(
 		&execution.ResourceOwner,
 		&execution.ID,
+		&execution.CreationDate,
 		&execution.EventDate,
-		&execution.Sequence,
 		&targets,
 	)
 	if err != nil {
@@ -315,8 +324,8 @@ func scanExecutions(rows *sql.Rows) (*Executions, error) {
 		err := rows.Scan(
 			&execution.ResourceOwner,
 			&execution.ID,
+			&execution.CreationDate,
 			&execution.EventDate,
-			&execution.Sequence,
 			&targets,
 			&count,
 		)
@@ -354,6 +363,8 @@ type ExecutionTarget struct {
 	Endpoint         string
 	Timeout          time.Duration
 	InterruptOnError bool
+	signingKey       *crypto.CryptoValue
+	SigningKey       string
 }
 
 func (e *ExecutionTarget) GetExecutionID() string {
@@ -374,6 +385,21 @@ func (e *ExecutionTarget) GetTargetType() domain.TargetType {
 func (e *ExecutionTarget) GetTimeout() time.Duration {
 	return e.Timeout
 }
+func (e *ExecutionTarget) GetSigningKey() string {
+	return e.SigningKey
+}
+
+func (t *ExecutionTarget) decryptSigningKey(alg crypto.EncryptionAlgorithm) error {
+	if t.signingKey == nil {
+		return nil
+	}
+	keyValue, err := crypto.DecryptString(t.signingKey, alg)
+	if err != nil {
+		return zerrors.ThrowInternal(err, "QUERY-bxevy3YXwy", "Errors.Internal")
+	}
+	t.SigningKey = keyValue
+	return nil
+}
 
 func scanExecutionTargets(rows *sql.Rows) ([]*ExecutionTarget, error) {
 	targets := make([]*ExecutionTarget, 0)
@@ -388,6 +414,7 @@ func scanExecutionTargets(rows *sql.Rows) ([]*ExecutionTarget, error) {
 			endpoint         = &sql.NullString{}
 			timeout          = &sql.NullInt64{}
 			interruptOnError = &sql.NullBool{}
+			signingKey       = &crypto.CryptoValue{}
 		)
 
 		err := rows.Scan(
@@ -398,6 +425,7 @@ func scanExecutionTargets(rows *sql.Rows) ([]*ExecutionTarget, error) {
 			endpoint,
 			timeout,
 			interruptOnError,
+			signingKey,
 		)
 
 		if err != nil {
@@ -411,6 +439,7 @@ func scanExecutionTargets(rows *sql.Rows) ([]*ExecutionTarget, error) {
 		target.Endpoint = endpoint.String
 		target.Timeout = time.Duration(timeout.Int64)
 		target.InterruptOnError = interruptOnError.Bool
+		target.signingKey = signingKey
 
 		targets = append(targets, target)
 	}

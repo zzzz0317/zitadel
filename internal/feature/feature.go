@@ -14,6 +14,11 @@ const (
 	KeyTokenExchange
 	KeyActions
 	KeyImprovedPerformance
+	KeyWebKey
+	KeyDebugOIDCParentError
+	KeyOIDCSingleV1SessionTermination
+	KeyDisableUserTokenEvent
+	KeyEnableBackChannelLogout
 )
 
 //go:generate enumer -type Level -transform snake -trimprefix Level
@@ -37,6 +42,11 @@ type Features struct {
 	TokenExchange                   bool                      `json:"token_exchange,omitempty"`
 	Actions                         bool                      `json:"actions,omitempty"`
 	ImprovedPerformance             []ImprovedPerformanceType `json:"improved_performance,omitempty"`
+	WebKey                          bool                      `json:"web_key,omitempty"`
+	DebugOIDCParentError            bool                      `json:"debug_oidc_parent_error,omitempty"`
+	OIDCSingleV1SessionTermination  bool                      `json:"oidc_single_v1_session_termination,omitempty"`
+	DisableUserTokenEvent           bool                      `json:"disable_user_token_event,omitempty"`
+	EnableBackChannelLogout         bool                      `json:"enable_back_channel_logout,omitempty"`
 }
 
 type ImprovedPerformanceType int32

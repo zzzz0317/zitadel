@@ -89,6 +89,26 @@ func (*instanceFeatureProjection) Reducers() []handler.AggregateReducer {
 				Reduce: reduceInstanceSetFeature[[]feature.ImprovedPerformanceType],
 			},
 			{
+				Event:  feature_v2.InstanceWebKeyEventType,
+				Reduce: reduceInstanceSetFeature[bool],
+			},
+			{
+				Event:  feature_v2.InstanceDebugOIDCParentErrorEventType,
+				Reduce: reduceInstanceSetFeature[bool],
+			},
+			{
+				Event:  feature_v2.InstanceOIDCSingleV1SessionTerminationEventType,
+				Reduce: reduceInstanceSetFeature[bool],
+			},
+			{
+				Event:  feature_v2.InstanceDisableUserTokenEvent,
+				Reduce: reduceInstanceSetFeature[bool],
+			},
+			{
+				Event:  feature_v2.InstanceEnableBackChannelLogout,
+				Reduce: reduceInstanceSetFeature[bool],
+			},
+			{
 				Event:  instance.InstanceRemovedEventType,
 				Reduce: reduceInstanceRemovedHelper(InstanceDomainInstanceIDCol),
 			},

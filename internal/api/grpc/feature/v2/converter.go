@@ -5,7 +5,7 @@ import (
 	"github.com/zitadel/zitadel/internal/command"
 	"github.com/zitadel/zitadel/internal/feature"
 	"github.com/zitadel/zitadel/internal/query"
-	feature_pb "github.com/zitadel/zitadel/pkg/grpc/feature/v2beta"
+	feature_pb "github.com/zitadel/zitadel/pkg/grpc/feature/v2"
 )
 
 func systemFeaturesToCommand(req *feature_pb.SetSystemFeaturesRequest) *command.SystemFeatures {
@@ -17,6 +17,9 @@ func systemFeaturesToCommand(req *feature_pb.SetSystemFeaturesRequest) *command.
 		Actions:                         req.Actions,
 		TokenExchange:                   req.OidcTokenExchange,
 		ImprovedPerformance:             improvedPerformanceListToDomain(req.ImprovedPerformance),
+		OIDCSingleV1SessionTermination:  req.OidcSingleV1SessionTermination,
+		DisableUserTokenEvent:           req.DisableUserTokenEvent,
+		EnableBackChannelLogout:         req.EnableBackChannelLogout,
 	}
 }
 
@@ -30,6 +33,9 @@ func systemFeaturesToPb(f *query.SystemFeatures) *feature_pb.GetSystemFeaturesRe
 		OidcTokenExchange:                   featureSourceToFlagPb(&f.TokenExchange),
 		Actions:                             featureSourceToFlagPb(&f.Actions),
 		ImprovedPerformance:                 featureSourceToImprovedPerformanceFlagPb(&f.ImprovedPerformance),
+		OidcSingleV1SessionTermination:      featureSourceToFlagPb(&f.OIDCSingleV1SessionTermination),
+		DisableUserTokenEvent:               featureSourceToFlagPb(&f.DisableUserTokenEvent),
+		EnableBackChannelLogout:             featureSourceToFlagPb(&f.EnableBackChannelLogout),
 	}
 }
 
@@ -42,6 +48,11 @@ func instanceFeaturesToCommand(req *feature_pb.SetInstanceFeaturesRequest) *comm
 		TokenExchange:                   req.OidcTokenExchange,
 		Actions:                         req.Actions,
 		ImprovedPerformance:             improvedPerformanceListToDomain(req.ImprovedPerformance),
+		WebKey:                          req.WebKey,
+		DebugOIDCParentError:            req.DebugOidcParentError,
+		OIDCSingleV1SessionTermination:  req.OidcSingleV1SessionTermination,
+		DisableUserTokenEvent:           req.DisableUserTokenEvent,
+		EnableBackChannelLogout:         req.EnableBackChannelLogout,
 	}
 }
 
@@ -55,6 +66,11 @@ func instanceFeaturesToPb(f *query.InstanceFeatures) *feature_pb.GetInstanceFeat
 		OidcTokenExchange:                   featureSourceToFlagPb(&f.TokenExchange),
 		Actions:                             featureSourceToFlagPb(&f.Actions),
 		ImprovedPerformance:                 featureSourceToImprovedPerformanceFlagPb(&f.ImprovedPerformance),
+		WebKey:                              featureSourceToFlagPb(&f.WebKey),
+		DebugOidcParentError:                featureSourceToFlagPb(&f.DebugOIDCParentError),
+		OidcSingleV1SessionTermination:      featureSourceToFlagPb(&f.OIDCSingleV1SessionTermination),
+		DisableUserTokenEvent:               featureSourceToFlagPb(&f.DisableUserTokenEvent),
+		EnableBackChannelLogout:             featureSourceToFlagPb(&f.EnableBackChannelLogout),
 	}
 }
 

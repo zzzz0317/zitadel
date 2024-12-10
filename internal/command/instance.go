@@ -6,8 +6,9 @@ import (
 
 	"golang.org/x/text/language"
 
+	"github.com/zitadel/logging"
 	"github.com/zitadel/zitadel/internal/api/authz"
-	"github.com/zitadel/zitadel/internal/api/ui/console"
+	"github.com/zitadel/zitadel/internal/api/http"
 	"github.com/zitadel/zitadel/internal/command/preparation"
 	"github.com/zitadel/zitadel/internal/crypto"
 	"github.com/zitadel/zitadel/internal/domain"
@@ -17,6 +18,7 @@ import (
 	"github.com/zitadel/zitadel/internal/notification/channels/smtp"
 	"github.com/zitadel/zitadel/internal/repository/instance"
 	"github.com/zitadel/zitadel/internal/repository/limits"
+	"github.com/zitadel/zitadel/internal/repository/milestone"
 	"github.com/zitadel/zitadel/internal/repository/org"
 	"github.com/zitadel/zitadel/internal/repository/project"
 	"github.com/zitadel/zitadel/internal/repository/quota"
@@ -26,22 +28,28 @@ import (
 )
 
 const (
-	zitadelProjectName    = "ZITADEL"
-	mgmtAppName           = "Management-API"
-	adminAppName          = "Admin-API"
-	authAppName           = "Auth-API"
-	consoleAppName        = "Console"
-	consoleRedirectPath   = console.HandlerPrefix + "/auth/callback"
-	consolePostLogoutPath = console.HandlerPrefix + "/signedout"
+	zitadelProjectName = "ZITADEL"
+	mgmtAppName        = "Management-API"
+	adminAppName       = "Admin-API"
+	authAppName        = "Auth-API"
+	consoleAppName     = "Console"
 )
 
 type InstanceSetup struct {
-	zitadel                  ZitadelConfig
-	InstanceName             string
-	CustomDomain             string
-	DefaultLanguage          language.Tag
-	Org                      InstanceOrgSetup
-	SecretGenerators         *SecretGenerators
+	zitadel          ZitadelConfig
+	InstanceName     string
+	CustomDomain     string
+	DefaultLanguage  language.Tag
+	Org              InstanceOrgSetup
+	SecretGenerators *SecretGenerators
+	WebKeys          struct {
+		Type   crypto.WebKeyConfigType
+		Config struct {
+			RSABits       crypto.RSABits
+			RSAHasher     crypto.RSAHasher
+			EllipticCurve crypto.EllipticCurve
+		}
+	}
 	PasswordComplexityPolicy struct {
 		MinLength    uint64
 		HasLowercase bool
@@ -110,12 +118,21 @@ type InstanceSetup struct {
 	}
 	EmailTemplate     []byte
 	MessageTexts      []*domain.CustomMessageText
-	SMTPConfiguration *smtp.Config
+	SMTPConfiguration *SMTPConfiguration
 	OIDCSettings      *OIDCSettings
 	Quotas            *SetQuotas
 	Features          *InstanceFeatures
 	Limits            *SetLimits
 	Restrictions      *SetRestrictions
+}
+
+type SMTPConfiguration struct {
+	Description    string
+	SMTP           smtp.SMTP
+	Tls            bool
+	From           string
+	FromName       string
+	ReplyToAddress string
 }
 
 type OIDCSettings struct {
@@ -139,6 +156,8 @@ type SecretGenerators struct {
 	DomainVerification       *crypto.GeneratorConfig
 	OTPSMS                   *crypto.GeneratorConfig
 	OTPEmail                 *crypto.GeneratorConfig
+	InviteCode               *crypto.GeneratorConfig
+	SigningKey               *crypto.GeneratorConfig
 }
 
 type ZitadelConfig struct {
@@ -233,7 +252,7 @@ func (c *Commands) SetUpInstance(ctx context.Context, setup *InstanceSetup) (str
 func contextWithInstanceSetupInfo(ctx context.Context, instanceID, projectID, consoleAppID, externalDomain string) context.Context {
 	return authz.WithConsole(
 		authz.SetCtxData(
-			authz.WithRequestedDomain(
+			http.WithRequestedHost(
 				authz.WithInstanceID(
 					ctx,
 					instanceID),
@@ -269,11 +288,14 @@ func setUpInstance(ctx context.Context, c *Commands, setup *InstanceSetup) (vali
 		return nil, nil, nil, err
 	}
 	setupSMTPSettings(c, &validations, setup.SMTPConfiguration, instanceAgg)
+	if err := setupWebKeys(c, &validations, setup.zitadel.instanceID, setup); err != nil {
+		return nil, nil, nil, err
+	}
 	setupOIDCSettings(c, &validations, setup.OIDCSettings, instanceAgg)
 	setupFeatures(&validations, setup.Features, setup.zitadel.instanceID)
 	setupLimits(c, &validations, limits.NewAggregate(setup.zitadel.limitsID, setup.zitadel.instanceID), setup.Limits)
 	setupRestrictions(c, &validations, restrictions.NewAggregate(setup.zitadel.restrictionsID, setup.zitadel.instanceID, setup.zitadel.instanceID), setup.Restrictions)
-
+	setupInstanceCreatedMilestone(&validations, setup.zitadel.instanceID)
 	return validations, pat, machineKey, nil
 }
 
@@ -392,6 +414,29 @@ func setupFeatures(validations *[]preparation.Validation, features *InstanceFeat
 	}
 }
 
+func setupWebKeys(c *Commands, validations *[]preparation.Validation, instanceID string, setup *InstanceSetup) error {
+	var conf crypto.WebKeyConfig
+	switch setup.WebKeys.Type {
+	case crypto.WebKeyConfigTypeUnspecified:
+		return nil // config disabled, skip
+	case crypto.WebKeyConfigTypeRSA:
+		conf = &crypto.WebKeyRSAConfig{
+			Bits:   setup.WebKeys.Config.RSABits,
+			Hasher: setup.WebKeys.Config.RSAHasher,
+		}
+	case crypto.WebKeyConfigTypeECDSA:
+		conf = &crypto.WebKeyECDSAConfig{
+			Curve: setup.WebKeys.Config.EllipticCurve,
+		}
+	case crypto.WebKeyConfigTypeED25519:
+		conf = &crypto.WebKeyED25519Config{}
+	default:
+		return zerrors.ThrowInternalf(nil, "COMMAND-sieX0", "Errors.Internal unknown web key type %q", setup.WebKeys.Type)
+	}
+	*validations = append(*validations, c.prepareGenerateInitialWebKeys(instanceID, conf))
+	return nil
+}
+
 func setupOIDCSettings(commands *Commands, validations *[]preparation.Validation, oidcSettings *OIDCSettings, instanceAgg *instance.Aggregate) {
 	if oidcSettings == nil {
 		return
@@ -407,7 +452,7 @@ func setupOIDCSettings(commands *Commands, validations *[]preparation.Validation
 	)
 }
 
-func setupSMTPSettings(commands *Commands, validations *[]preparation.Validation, smtpConfig *smtp.Config, instanceAgg *instance.Aggregate) {
+func setupSMTPSettings(commands *Commands, validations *[]preparation.Validation, smtpConfig *SMTPConfiguration, instanceAgg *instance.Aggregate) {
 	if smtpConfig == nil {
 		return
 	}
@@ -848,7 +893,8 @@ func (c *Commands) RemoveInstance(ctx context.Context, id string) (*domain.Objec
 	if err != nil {
 		return nil, err
 	}
-
+	err = c.caches.milestones.Invalidate(ctx, milestoneIndexInstanceID, id)
+	logging.OnError(err).Error("milestone invalidate")
 	return &domain.ObjectDetails{
 		Sequence:      events[len(events)-1].Sequence(),
 		EventDate:     events[len(events)-1].CreatedAt(),
@@ -866,10 +912,16 @@ func (c *Commands) prepareRemoveInstance(a *instance.Aggregate) preparation.Vali
 			if !writeModel.State.Exists() {
 				return nil, zerrors.ThrowNotFound(err, "COMMA-AE3GS", "Errors.Instance.NotFound")
 			}
-			return []eventstore.Command{instance.NewInstanceRemovedEvent(ctx,
-					&a.Aggregate,
-					writeModel.Name,
-					writeModel.Domains)},
+			milestoneAggregate := milestone.NewInstanceAggregate(a.ID)
+			return []eventstore.Command{
+					instance.NewInstanceRemovedEvent(ctx,
+						&a.Aggregate,
+						writeModel.Name,
+						writeModel.Domains),
+					milestone.NewReachedEvent(ctx,
+						milestoneAggregate,
+						milestone.InstanceDeleted),
+				},
 				nil
 		}, nil
 	}

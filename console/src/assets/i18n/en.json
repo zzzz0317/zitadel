@@ -37,7 +37,7 @@
       "DESCRIPTION": "A project hosts one or more applications, that you can use to authenticate your users. Also you can authorize your users with projects. To allow users from other organizations to log in to your applications, grant them access to your project.<br/><br/>If you can't find a project, contact the projects owner or someone with the corresponding rights to gain access.",
       "OWNED": {
         "TITLE": "Owned Projects",
-        "DESCRIPTION": "These are the projects you own. You can manage theses projects settings, authorizations and applications."
+        "DESCRIPTION": "These are the projects you own. You can manage these project settings, authorizations and applications."
       },
       "GRANTED": {
         "TITLE": "Granted Projects",
@@ -197,7 +197,8 @@
           "VE": "When a user changes their email address, they will receive an email with a link to verify the new address.",
           "VP": "When a user changes their phone number, they will receive an SMS with a code to verify the new number.",
           "VEO": "When a user adds a One-Time Password via email method, they need to activate it by entering a code sent to their email address.",
-          "VSO": "When a user adds a One-Time Password via SMS method, they need to activate it by entering a code sent to their phone number."
+          "VSO": "When a user adds a One-Time Password via SMS method, they need to activate it by entering a code sent to their phone number.",
+          "IU": "When a user invite code is created, they will receive an email with a link to set their authentication method."
         }
       },
       "LOGIN_TEXTS": {
@@ -231,15 +232,15 @@
           "LABEL": "Maximum Lifetime in hours",
           "PW_CHECK": {
             "TITLE": "Password Check",
-            "DESCRIPTION": "Your users have to change their passwords in these periods."
+            "DESCRIPTION": "Users will be required to re-authenticate with their password after this period."
           },
           "EXT_LOGIN_CHECK": {
             "TITLE": "External Login Check",
-            "DESCRIPTION": "Your users are redirected to their external identity proviers in theses periods."
+            "DESCRIPTION": "Your users are redirected to their external identity providers after this periods."
           },
           "MULTI_FACTOR_INIT": {
             "TITLE": "Multifactor Init Check",
-            "DESCRIPTION": "Your users will be prompted to set up a second factor or a Multifactor in these periods, if they haven't done so already. A lifetime of 0 deactivates this prompt."
+            "DESCRIPTION": "Your users will be prompted to set up a second factor or a Multifactor after this periods if they haven't done so already. A lifetime of 0 deactivates this prompt."
           },
           "SECOND_FACTOR_CHECK": {
             "TITLE": "Second Factor Check",
@@ -759,7 +760,7 @@
         "3": "Deleted"
       },
       "DIALOG": {
-        "MFA_DELETE_TITLE": "Remove Secondfactor",
+        "MFA_DELETE_TITLE": "Remove Second factor",
         "MFA_DELETE_DESCRIPTION": "You are about to delete a second factor. Are you sure?",
         "ADD_MFA_TITLE": "Add Second Factor",
         "ADD_MFA_DESCRIPTION": "Select one of the following options."
@@ -772,9 +773,9 @@
       "IDPNAME": "IDP Name",
       "USERDISPLAYNAME": "External Name",
       "EXTERNALUSERID": "External User ID",
-      "EMPTY": "No external IDP found",
+      "EMPTY": "No external IdP found",
       "DIALOG": {
-        "DELETE_TITLE": "Remove IDP",
+        "DELETE_TITLE": "Remove IdP",
         "DELETE_DESCRIPTION": "You are about to delete an Identity Provider from a user. Do you really want to continue?"
       }
     },
@@ -1086,7 +1087,8 @@
       "REMOVEACTIONSLIST": {
         "TITLE": "Delete selected Actions?",
         "DESCRIPTION": "Are you sure you want to delete the selected actions from the flow?"
-      }
+      },
+      "ABOUTNAME": "The name of the action and the name of the function in the javascript have to be the same"
     },
     "TOAST": {
       "ACTIONSSET": "Actions set",
@@ -1380,7 +1382,10 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "hu": "Magyar",
+        "ko": "한국어"
       }
     },
     "SMTP": {
@@ -1417,6 +1422,8 @@
         "SID": "Sid",
         "TOKEN": "Token",
         "SENDERNUMBER": "Sender Number",
+        "VERIFYSERVICESID": "Verification Service Sid",
+        "VERIFYSERVICESID_DESCRIPTION": "Setting a Verification Service Sid, allows using the Twilio Verify Service instead of the Messages Service for verification of phone numbers and OTP SMS",
         "ADDED": "Twilio added successfully.",
         "UPDATED": "Twilio updated successfully.",
         "REMOVED": "Twilio removed",
@@ -1437,9 +1444,7 @@
         "7": "One Time Password (OTP) - SMS",
         "8": "One Time Password (OTP) - Email"
       },
-      "ADDGENERATOR": "Define Secret Generator",
-      "GENERATORTYPE": "Type",
-      "EXPIRY": "Expiration (in hours)",
+      "EXPIRY": "Expiration (in minutes)",
       "INCLUDEDIGITS": "Include Numbers",
       "INCLUDESYMBOLS": "Include Symbols",
       "INCLUDELOWERLETTERS": "Include Lower letters",
@@ -1469,6 +1474,8 @@
       "USERSCHEMA_DESCRIPTION": "User Schemas allow to manage data schemas of user. If the flag is enabled, you'll be able to use the new API and its features.",
       "ACTIONS": "Actions",
       "ACTIONS_DESCRIPTION": "Actions v2 allow to manage data executions and targets. If the flag is enabled, you'll be able to use the new API and its features.",
+      "OIDCSINGLEV1SESSIONTERMINATION": "OIDC Single V1 Session Termination",
+      "OIDCSINGLEV1SESSIONTERMINATION_DESCRIPTION": "If the flag is enabled, you'll be able to terminate a single session from the login UI by providing an id_token with a `sid` claim as id_token_hint on the end_session endpoint. Note that currently all sessions from the same user agent (browser) are terminated in the login UI. Sessions managed through the Session API already allow the termination of single sessions.",
       "STATES": {
         "INHERITED": "Inherit",
         "ENABLED": "Enabled",
@@ -1614,7 +1621,9 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "ko": "한국어"
       },
       "KEYS": {
         "emailVerificationDoneText": "Email verification done",
@@ -1629,7 +1638,6 @@
         "initPasswordText": "Initialize password",
         "initializeDoneText": "Initialize user done",
         "initializeUserText": "Initialize user",
-        "linkingUserPromptText": "Linking user prompt",
         "linkingUserDoneText": "Linking user done",
         "loginText": "Login",
         "logoutText": "Logout",
@@ -1665,7 +1673,8 @@
         "PR": "Password Reset",
         "DC": "Domain Claim",
         "PL": "Passwordless",
-        "PC": "Password Change"
+        "PC": "Password Change",
+        "IU": "Invite User"
       },
       "CHIPS": {
         "firstname": "Given name",
@@ -1684,8 +1693,9 @@
         "username": "Username",
         "tempUsername": "Temp username",
         "otp": "One-time password",
-        "verifyUrl": "Verify One-time-password URL",
-        "expiry": "Expiry"
+        "verifyUrl": "Verify One-time password URL",
+        "expiry": "Expiry",
+        "applicationName": "Application name"
       },
       "TOAST": {
         "UPDATED": "Custom Texts saved."
@@ -1713,8 +1723,8 @@
       "ALLOWUSERNAMEPASSWORD_DESC": "The conventional login with user name and password is allowed.",
       "ALLOWEXTERNALIDP_DESC": "The login is allowed for the underlying identity providers",
       "ALLOWREGISTER_DESC": "If the option is selected, an additional step for registering a user appears in the login.",
-      "FORCEMFA": "Force MFA",
-      "FORCEMFALOCALONLY": "Force MFA for local authenticated users",
+      "FORCEMFA": "Force MFA for all users",
+      "FORCEMFALOCALONLY": "Force MFA for local authenticated users only",
       "FORCEMFALOCALONLY_DESC": "If the option is selected, local authenticated users have to configure a second factor for login.",
       "HIDEPASSWORDRESET_DESC": "If the option is selected, the user can't reset his password in the login process.",
       "HIDELOGINNAMESUFFIX": "Hide Loginname suffix",
@@ -1783,7 +1793,7 @@
       "TYPE": {
         "OWNED": "Owned Projects",
         "OWNED_SINGULAR": "Owned Project",
-        "GRANTED_SINGULAR": "Granted Project"
+        "GRANTED_SINGULAR": "Granted Project of {{name}}"
       },
       "PRIVATELABEL": {
         "TITLE": "Branding Setting",
@@ -2067,10 +2077,10 @@
       "ISAUTOCREATION_DESC": "If selected, an account will be created if it does not exist yet.",
       "ISAUTOUPDATE": "Automatic update",
       "ISAUTOUPDATE_DESC": "If selected, accounts are updated on reauthentication.",
-      "ISCREATIONALLOWED": "Account creation allowed",
-      "ISCREATIONALLOWED_DESC": "Determines whether accounts can be created.",
-      "ISLINKINGALLOWED": "Account linking allowed",
-      "ISLINKINGALLOWED_DESC": "Determines whether an identity can be linked to an existing account.",
+      "ISCREATIONALLOWED": "Account creation allowed (manually)",
+      "ISCREATIONALLOWED_DESC": "Determines whether accounts can be created using an external account. Disable if users should not be able to edit account information when auto_creation is enabled.",
+      "ISLINKINGALLOWED": "Account linking allowed (manually)",
+      "ISLINKINGALLOWED_DESC": "Determines whether an identity can be manually linked to an existing account. Disable if users should only be allowed to link the proposed account in case of active auto_linking.",
       "AUTOLINKING_DESC": "Determines whether an identity will be prompted to be linked to an existing account.",
       "AUTOLINKINGTYPE": {
         "0": "Disabled",
@@ -2146,7 +2156,7 @@
     "PREFERREDLANGUAGEATTRIBUTE": "Preferred language attribute",
     "PREFERREDUSERNAMEATTRIBUTE": "Preferred username attribute",
     "PROFILEATTRIBUTE": "Profile attribute",
-    "IDPDISPLAYNAMMAPPING": "IDP Display Name Mapping",
+    "IDPDISPLAYNAMMAPPING": "IdP Display Name Mapping",
     "USERNAMEMAPPING": "Username Mapping",
     "DATES": "Dates",
     "CREATIONDATE": "Created At",
@@ -2154,13 +2164,13 @@
     "DEACTIVATE": "Deactivate",
     "ACTIVATE": "Activate",
     "DELETE": "Delete",
-    "DELETE_TITLE": "Delete IDP",
+    "DELETE_TITLE": "Delete IdP",
     "DELETE_DESCRIPTION": "You are about to delete an identity provider. The resulting changes are irrevocable. Do you really want to do this?",
-    "REMOVE_WARN_TITLE": "Remove IDP",
-    "REMOVE_WARN_DESCRIPTION": "You are about to remove an identity provider. This will remove the selection of the available IDP for your users and already registered users won't be able to login again. Are you sure to continue?",
-    "DELETE_SELECTION_TITLE": "Delete IDP",
+    "REMOVE_WARN_TITLE": "Remove IdP",
+    "REMOVE_WARN_DESCRIPTION": "You are about to remove an identity provider. This will remove the selection of the available IdP for your users and already registered users won't be able to login again. Are you sure to continue?",
+    "DELETE_SELECTION_TITLE": "Delete IdP",
     "DELETE_SELECTION_DESCRIPTION": "You are about to delete an identity provider. The resulting changes are irrevocable. Do you really want to do this?",
-    "EMPTY": "No IDP available",
+    "EMPTY": "No IdP available",
     "OIDC": {
       "GENERAL": "General Information",
       "TITLE": "OIDC Configuration",
@@ -2579,7 +2589,9 @@
     "cs": "Čeština",
     "ru": "Русский",
     "nl": "Nederlands",
-    "sv": "Svenska"
+    "sv": "Svenska",
+    "id": "Bahasa Indonesia",
+    "ko": "한국어"
   },
   "MEMBER": {
     "ADD": "Add a Manager",

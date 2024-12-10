@@ -197,7 +197,8 @@
           "VE": "Cuando un usuario cambia su dirección de correo electrónico, recibirá un correo electrónico con un enlace para verificar la nueva dirección.",
           "VP": "Cuando un usuario cambia su número de teléfono, recibirá un SMS con un código para verificar el nuevo número.",
           "VEO": "Cuando un usuario agrega una Contraseña de Un Solo Uso mediante correo electrónico, necesita activarla ingresando un código enviado a su dirección de correo electrónico.",
-          "VSO": "Cuando un usuario agrega una Contraseña de Un Solo Uso mediante SMS, necesita activarla ingresando un código enviado a su número de teléfono."
+          "VSO": "Cuando un usuario agrega una Contraseña de Un Solo Uso mediante SMS, necesita activarla ingresando un código enviado a su número de teléfono.",
+          "IU": "Cuando se crea un código de invitación de usuario, recibirán un correo electrónico con un enlace para configurar su método de autenticación."
         }
       },
       "LOGIN_TEXTS": {
@@ -231,7 +232,7 @@
           "LABEL": "Duración Máxima en horas",
           "PW_CHECK": {
             "TITLE": "Verificación de Contraseña",
-            "DESCRIPTION": "Tus usuarios tienen que cambiar sus contraseñas en estos períodos."
+            "DESCRIPTION": "Los usuarios deberán volver a autenticarse con su contraseña después de este período."
           },
           "EXT_LOGIN_CHECK": {
             "TITLE": "Verificación de Inicio de Sesión Externo",
@@ -1086,7 +1087,8 @@
       "REMOVEACTIONSLIST": {
         "TITLE": "¿Borrar acciones seleccionadas?",
         "DESCRIPTION": "¿Estás seguro que quieres borrar las acciones seleccionadas del flujo?"
-      }
+      },
+      "ABOUTNAME": "El nombre de la acción y el nombre de la función en javascript tienen que ser el mismo"
     },
     "TOAST": {
       "ACTIONSSET": "Acciones establecidas",
@@ -1381,7 +1383,10 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "hu": "Magyar",
+        "ko": "한국어"
       }
     },
     "SMTP": {
@@ -1418,6 +1423,8 @@
         "SID": "Sid",
         "TOKEN": "Token",
         "SENDERNUMBER": "Número de emisor",
+        "VERIFYSERVICESID": "SID del servicio de verificación",
+        "VERIFYSERVICESID_DESCRIPTION": "Establecer un SID del servicio de verificación permite usar el servicio Twilio Verify en lugar del servicio de mensajes para la verificación de números de teléfono y SMS OTP.",
         "ADDED": "Twilio añadido con éxito.",
         "UPDATED": "Twilio actualizado con éxito",
         "REMOVED": "Twilio eliminado",
@@ -1438,9 +1445,7 @@
         "7": "One Time Password (OTP) - SMS",
         "8": "One Time Password (OTP) - email"
       },
-      "ADDGENERATOR": "Configurar generador del secreto",
-      "GENERATORTYPE": "Tipo",
-      "EXPIRY": "Caducidad (en horas)",
+      "EXPIRY": "Caducidad (en minutos)",
       "INCLUDEDIGITS": "Incluir números",
       "INCLUDESYMBOLS": "Incluir símbolos",
       "INCLUDELOWERLETTERS": "Incluir letras minúsculas",
@@ -1470,6 +1475,8 @@
       "USERSCHEMA_DESCRIPTION": "Los esquemas de usuario permiten gestionar los esquemas de datos de los usuarios. Si se activa la bandera, podrás utilizar la nueva API y sus funciones.",
       "ACTIONS": "Acciones",
       "ACTIONS_DESCRIPTION": "Acciones v2 permite administrar las ejecuciones y objetivos de datos. Si la bandera está habilitada, podrá utilizar la nueva API y sus funciones.",
+      "OIDCSINGLEV1SESSIONTERMINATION": "OIDC Single V1 Terminación de sesión",
+      "OIDCSINGLEV1SESSIONTERMINATION_DESCRIPTION": "Si la bandera está habilitada, podrá terminar una sesión única desde la interfaz de usuario de inicio de sesión proporcionando un id_token con una reclamación `sid` como id_token_hint en el punto final de end_session. Tenga en cuenta que actualmente se terminan todas las sesiones del mismo agente de usuario (navegador) en la interfaz de usuario de inicio de sesión. Las sesiones administradas a través de la API de sesión ya permiten la terminación de sesiones individuales.",
       "STATES": {
         "INHERITED": "Heredado",
         "ENABLED": "Habilitado",
@@ -1615,7 +1622,9 @@
         "cs": "Čeština",
         "ru": "Русский",
         "nl": "Nederlands",
-        "sv": "Svenska"
+        "sv": "Svenska",
+        "id": "Bahasa Indonesia",
+        "ko": "한국어"
       },
       "KEYS": {
         "emailVerificationDoneText": "Verificación de email realizada",
@@ -1630,7 +1639,6 @@
         "initPasswordText": "Inicializar contraseña",
         "initializeDoneText": "Inicializar usuario, hecho",
         "initializeUserText": "Inicializar usuario",
-        "linkingUserPromptText": "Mensaje de enlace de usuario",
         "linkingUserDoneText": "Vinculación de usuario, hecho",
         "loginText": "Iniciar sesión",
         "logoutText": "Cerrar sesión",
@@ -1666,7 +1674,8 @@
         "PR": "Restablecimiento de contraseña",
         "DC": "Reclamar un dominio",
         "PL": "Acceso sin contraseña",
-        "PC": "Cambio de contraseña"
+        "PC": "Cambio de contraseña",
+        "IU": "Invitar usuario"
       },
       "CHIPS": {
         "firstname": "Nombre",
@@ -1686,7 +1695,8 @@
         "tempUsername": "Nombre de usuario temporal",
         "otp": "Contraseña de un solo uso",
         "verifyUrl": "URL para verificar la contraseña de un solo uso",
-        "expiry": "Expiración"
+        "expiry": "Expiración",
+        "applicationName": "Nombre de la aplicación"
       },
       "TOAST": {
         "UPDATED": "Textos personalizados guardados."
@@ -1714,8 +1724,8 @@
       "ALLOWUSERNAMEPASSWORD_DESC": "El inicio de sesión convencional con nombre de usuario y contraseña está permitido.",
       "ALLOWEXTERNALIDP_DESC": "El inicio de sesión está permitido para los proveedores de identidad subyacentes",
       "ALLOWREGISTER_DESC": "Si esta opción es seleccionada, aparece un paso adicional durante el inicio de sesión para registrar un usuario.",
-      "FORCEMFA": "Forzar MFA",
-      "FORCEMFALOCALONLY": "Forzar MFA para usuarios locales",
+      "FORCEMFA": "Forzar MFA para todos los usuarios",
+      "FORCEMFALOCALONLY": "Forzar MFA solo para usuarios autenticados localmente",
       "FORCEMFALOCALONLY_DESC": "Si esta opción es seleccionada, los usuarios autenticados localmente tendrán que configurar un doble factor para iniciar sesión",
       "HIDEPASSWORDRESET_DESC": "Si esta opción es seleccionada, el usuario no podrá restablecer su contraseña en el proceso de inicio de sesión.",
       "HIDELOGINNAMESUFFIX": "Ocultar sufijo del nombre de inicio de sesión",
@@ -1784,7 +1794,7 @@
       "TYPE": {
         "OWNED": "Proyectos propios",
         "OWNED_SINGULAR": "Proyecto propio",
-        "GRANTED_SINGULAR": "Proyecto concedido"
+        "GRANTED_SINGULAR": "Proyecto asignado {{name}}"
       },
       "PRIVATELABEL": {
         "TITLE": "Ajustes de imagen de marca",
@@ -2060,10 +2070,10 @@
       "ISAUTOCREATION_DESC": "Si se selecciona, una cuenta se creará si aún no existiera.",
       "ISAUTOUPDATE": "Actualización automática",
       "ISAUTOUPDATE_DESC": "Si se selecciona, las cuentas se actualizarán en la reautenticación.",
-      "ISCREATIONALLOWED": "Creación de cuentas permitida",
-      "ISCREATIONALLOWED_DESC": "Determina si se pueden crear cuentas.",
-      "ISLINKINGALLOWED": "Permitida la vinculación de cuentas",
-      "ISLINKINGALLOWED_DESC": "Determina si una identidad puede vincularse a una cuenta existente.",
+      "ISCREATIONALLOWED": "Creación de cuenta permitida (manualmente)",
+      "ISCREATIONALLOWED_DESC": "Determina si las cuentas se pueden crear usando una cuenta externa. Deshabilita si los usuarios no deberían poder editar la información de la cuenta cuando la creación automática está habilitada.",
+      "ISLINKINGALLOWED": "Enlace de cuenta permitido (manualmente)",
+      "ISLINKINGALLOWED_DESC": "Determina si una identidad se puede vincular manualmente a una cuenta existente. Deshabilita si los usuarios solo deberían poder vincular la cuenta propuesta en caso de vinculación automática activa.",
       "AUTOLINKING_DESC": "Determina si se pedirá a una identidad que se vincule a una cuenta existente.",
       "AUTOLINKINGTYPE": {
         "0": "Desactivado",
@@ -2551,7 +2561,9 @@
     "cs": "Čeština",
     "ru": "Русский",
     "nl": "Nederlands",
-    "sv": "Svenska"
+    "sv": "Svenska",
+    "id": "Bahasa Indonesia",
+    "ko": "한국어"
   },
   "MEMBER": {
     "ADD": "Añadir un Mánager",
